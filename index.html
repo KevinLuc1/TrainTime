@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html lang="en-us">
+
+<head>
+
+  <meta charset="UTF-8">
+  <title>Choo Choo</title>
+  <script src="https://code.jquery.com/jquery.js"></script>
+  <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
+
+  
+</head>
+
+<body>
+  <div class="container">
+   
+    <div class="jumbotron">
+      <h1 style="text-align:center" >CHOOOO CHOOOOOOOO TIME!!!!!</h1>
+      <p style="text-align:center" >choooo chooooooo chooooooooooooo</p>
+    </div>
+
+    <div class="panel panel-primary">
+      <div class="panel-heading">Current Train Schedule</div>
+      <div class="panel-body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Train Name</th>
+              <th>Destination</th>
+              <th>Frequency</th>
+              <th>Next Arrival</th>
+              <th>Minutes Away</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel panel-primary">
+      <div class="panel-heading">Current Train Schedule</div>
+        <form style="padding:20px">
+          <div class="form-group">
+            <label> Train Name </label>
+            <input class="form-control" id="trainName">
+          </div>
+          <div class="form-group">
+            <label> Destination </label>
+            <input class="form-control" id="destination">
+          </div>
+          <div class="form-group">
+            <label> First Train Time (HH:mm - military time) </label>
+            <input type="time" class="form-control" id="firstTrainTime">
+          </div>
+          <div class="form-group">
+            <label> Frequency (min) </label>
+            <input class="form-control" id="frequency">
+          </div>
+          <button id="submit" type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+  </div>
+
+  <script>
+    var config = {
+      apiKey: "AIzaSyClOBdgJZEV_jTYHEwMjCuK0V64mEQMAeY",
+      authDomain: "project-demo-d9f3a.firebaseapp.com",
+      databaseURL: "https://project-demo-d9f3a.firebaseio.com",
+      projectId: "project-demo-d9f3a",
+      storageBucket: "project-demo-d9f3a.appspot.com",
+      messagingSenderId: "636005189170"
+    };
+    firebase.initializeApp(config);
+
+    var database = firebase.database();
+
+    $("#submit").on("click", function(){
+      event.preventDefault();
+      
+      var trainName = $("#trainName").val().trim();
+      var destination = $("#destination").val().trim();
+      var firstTrainTime = $("#firstTrainTime").val().trim();
+      var frequency = $("#frequency").val().trim();
+
+      //creates firebase entry
+      var newEntry = {
+        TrainName: trainName,
+        Destination: destination,
+        FirstTrainTime: firstTrainTime,
+        Frequency: frequency
+      }
+
+      //pushes data to firebase
+      database.ref().push(newEntry);
+
+      //clears all of the text input boxes
+      $("#trainName").val("");
+      $("#destination").val("");
+      $("#firstTrainTime").val("");
+      $("#frequency").val("");
+    })
+
+    //everytime a new child is added, do this function
+    database.ref().on("child_added", function(childSnapshot){
+       // console.log(childSnapshot.val());
+
+       //Storing firebase data into local variables
+       var databaseTrainName = childSnapshot.val().TrainName;
+       var databaseDestination = childSnapshot.val().Destination;
+       var databaseFirstTrainTime = childSnapshot.val().FirstTrainTime;
+       var databaseFrequency = childSnapshot.val().Frequency;
+
+      // First Time (pushed back 1 year to make sure it comes before current time)
+       var firstTimeConverted = moment(databaseFirstTrainTime, "hh:mm").subtract(1, "years");
+
+       //current time
+       var currentTime = moment();
+
+       //difference between the times
+       var diffTime = moment().diff(moment(firstTimeConverted), "minutes");
+
+       //remainder is time apart
+       var tRemainder = diffTime % databaseFrequency;
+
+       //minutes untill next train
+       var tMinutesTillTrain = databaseFrequency - tRemainder;
+
+       //next train arrival time
+       var nextTrain = moment().add(tMinutesTillTrain, "minutes");
+       var nextTrainTime = moment(nextTrain).format("hh:mm")
+
+       $(".table tbody").append("<tr><td>" + databaseTrainName + "</td><td>" + databaseDestination + "</td><td>" + databaseFrequency + "</td><td>" + nextTrainTime + "</td><td>" + tMinutesTillTrain + "</td></tr>");
+    })
+
+
+
+
+
+  </script>
+</body>
+</html>
